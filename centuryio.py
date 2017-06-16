@@ -3,11 +3,10 @@ import pandas as pd
 import datetime as dt
 import pdb
 
-def load_century_lis( fpathname ) :
+def load_centlis( fpathname ) :
     """
-    Load a specified century output file and return a pandas DataFrame object.
-    DataFrame has a datetime index and has been reindexed to include all
-    one-month periods. 
+    Load a specified century list100 output file (*.lis) and return a pandas
+    DataFrame object.
 
     Args:
         fpathname (str) : path and filename of desired century (.lis) file
@@ -17,7 +16,7 @@ def load_century_lis( fpathname ) :
 
     print('Parsing ' + fpathname)
 
-    # Parse using Campbell timestamp
+    # Parse fixed width file
     df = pd.read_fwf(fpathname , skiprows=( 1, ), index_col='time',
             header=0, na_values=['NaN', 'NAN', 'INF', '-INF'])
 
@@ -28,8 +27,42 @@ def load_century_lis( fpathname ) :
        
     return df
 
+def load_dcout( fpathname, skipr=0, noheader=False ) :
+    """
+    Load a specified daycent output file (*.out) and return a pandas
+    DataFrame object.
 
-def centidx_decyr( idx, startyr=None ) :
+    Args:
+        fpathname (str) : path and filename of desired daycent (.out) file
+        skipr : number of lines to skip at head of file
+    Return:
+        df   : pandas DataFrame    
+    """
+
+    print('Parsing ' + fpathname)
+
+    if noheader:
+        with open(fpathname, 'r') as f:
+            cols = f.readline().rstrip('\n')
+        cols = [x for x in cols.split(' ') if x is not '']
+        cols = ['time', 'dayofyr'] + ["c{:02d}".format(x)
+                for x in range(len(cols) - 2)]
+        skipr = skipr - 1
+
+    else:
+        with open(fpathname, 'r') as f:
+            for i in range(skipr+1):
+                cols = f.readline().rstrip('\n')
+            cols = [x for x in cols.split(' ') if x is not '']
+
+    # Parse fixed width file
+    df = pd.read_fwf(fpathname , skiprows=skipr + 1, header=None, names=cols,
+            na_values=['NaN', 'NAN', 'NA', 'INF', '-INF'])
+       
+    return df
+
+
+def dcindex_decyr( idx, startyr=None ) :
     """
     Convert a daycent index in decimal year format to datetime index (if
     given a startyear in datetime range), or period index (default, works with
@@ -62,7 +95,7 @@ def centidx_decyr( idx, startyr=None ) :
     return newidx
 
 
-def centidx_ydoy( df, startyr=None ) :
+def dcindex_ydoy( df, startyr=None ) :
     """
     Convert a daycent index in year + dayofyear format to datetime index (if
     given a startyear in datetime range), or period index (default, works with
