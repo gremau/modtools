@@ -88,7 +88,7 @@ def dcindex_decyr( idx, startyr=None ) :
         ymd = df.iloc[0].loc[['year', 'month', 'day']]
         start = [str(s) for s in ymd.astype(int)]
         start = '-'.join(start)
-        ymd2 = df.iloc[df.shape[0]-1].loc[['year', 'month', 'day']]
+        ymd2 = df.iloc[-1].loc[['year', 'month', 'day']]
         end = [str(s) for s in ymd2.astype(int)]
         end = '-'.join(end)
         newidx = pd.period_range(start, end, freq='M')
@@ -119,12 +119,22 @@ def dcindex_ydoy( df, startyr=None ) :
         newidx = pd.to_datetime(df_c.ts, format='%Y%j')
     else:
         styear = str(int(df_c.time.iloc[0]))
-        endyear = str(int(df_c.time.iloc[df_c.shape[0]-1]))
+        endyear = str(int(df_c.time.iloc[-1]))
         df_c['doy'] = df_c.dayofyr.astype(str)
         start = pd.to_datetime('1900' + df_c.doy[0], format='%Y%j')
-        end = pd.to_datetime('1901' + df_c.doy[df_c.shape[0]-1], format='%Y%j')
+        end = pd.to_datetime('1901' + df_c.doy.iloc[-1], format='%Y%j')
         start = dt.date.strftime(start, '%Y-%m-%d').replace('1900', styear)
         end = dt.date.strftime(end, '%Y-%m-%d').replace('1901', endyear)
         newidx = pd.period_range(start, end, freq='D')
+    # Note: Daycent dates are off by about 1 day a century due to some
+    # error in leapyear calculations. To deal with this we find the leapdays
+    # in the new index and remove the necessary number (randomly)
+    discrepancy = len(newidx) - df.shape[0]
+    is_leap_day = (newidx.month == 2) & (newidx.day == 29)
+    leapdays = np.where(is_leap_day)[0]
+    rmleaps = np.random.choice(leapdays, discrepancy, replace=False)
+    rmleaplabels = newidx[rmleaps]
+    newidx = newidx.drop(rmleaplabels)
+    #day366 = np.add(leapdays, 366 - (31+28))
     return newidx
 
