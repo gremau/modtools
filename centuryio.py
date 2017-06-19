@@ -27,7 +27,7 @@ def load_centlis( fpathname ) :
        
     return df
 
-def load_dcout( fpathname, skipr=0, noheader=False ) :
+def load_dcout( fpathname, skipr=0, noheader=False, tgmonth=False ) :
     """
     Load a specified daycent output file (*.out) and return a pandas
     DataFrame object.
@@ -54,6 +54,9 @@ def load_dcout( fpathname, skipr=0, noheader=False ) :
             for i in range(skipr+1):
                 cols = f.readline().rstrip('\n')
             cols = [x for x in cols.split(' ') if x is not '']
+    
+    if tgmonth:
+        cols.insert(1, 'month')
 
     # Parse fixed width file
     df = pd.read_fwf(fpathname , skiprows=skipr + 1, header=None, names=cols,
@@ -62,11 +65,13 @@ def load_dcout( fpathname, skipr=0, noheader=False ) :
     return df
 
 
-def dcindex_decyr( idx, startyr=None ) :
+def lisindex_dt( idx, startyr=None ) :
     """
-    Convert a daycent index in decimal year format to datetime index (if
+    Convert a list100 index in decimal year format to datetime index (if
     given a startyear in datetime range), or period index (default, works with
-    far future or past values).
+    far future or past values). Note that the convention for list100 output
+    is that year.00 is actually december the prior year, so this is adjusted
+    for to make dates compatible with DayCent .out dates (when converted)
 
     Args:
         idx: decimal year index from a Century/DayCent .lis or .out file
@@ -95,7 +100,7 @@ def dcindex_decyr( idx, startyr=None ) :
     return newidx
 
 
-def dcindex_ydoy( df, startyr=None ) :
+def dcindex_ydoy_dt( df, startyr=None ) :
     """
     Convert a daycent index in year + dayofyear format to datetime index (if
     given a startyear in datetime range), or period index (default, works with
@@ -138,3 +143,70 @@ def dcindex_ydoy( df, startyr=None ) :
     #day366 = np.add(leapdays, 366 - (31+28))
     return newidx
 
+def dcindex_ymo_dt( df, startyr=None ) :
+    """
+    Convert a daycent index in year + month format to datetime index (if
+    given a startyear in datetime range), or period index (default, works with
+    far future or past values).
+
+    Args:
+        df: dataframe from Day/Century with a 'time' and 'dayofyr' column
+        startyr: None, or integer year if placing new index in datetime range. 
+                 Note that datetime range is from 1677 to 2262.
+    Returns:
+        newidx: Datetime or period index
+    """
+    
+    df_c = df.copy()
+    if startyr is not None:
+        offset = df_c.time.iloc[0] - startyr
+        df_c.time = df_c.time - offset
+        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['month'] = df_c.month.astype(str)
+        df_c['ts'] = df_c.year + df_c.month
+        newidx = pd.to_datetime(df_c.ts, format='%Y%m') + pd.offsets.MonthEnd(0)
+    else:
+        styear = str(int(df_c.time.iloc[0]))
+        endyear = str(int(df_c.time.iloc[-1]))
+        df_c['month'] = df_c.month.astype(str)
+        start = pd.to_datetime('1900' + df_c.month[0],
+                format='%Y%m') + pd.offsets.MonthEnd(0)
+        end = pd.to_datetime('1901' + df_c.month.iloc[-1],
+                format='%Y%m') + pd.offsets.MonthEnd(0)
+        start = dt.date.strftime(start, '%Y-%m-%d').replace('1900', styear)
+        end = dt.date.strftime(end, '%Y-%m-%d').replace('1901', endyear)
+        newidx = pd.period_range(start, end, freq='M')
+    return newidx
+
+
+def dcindex_y_dt( df, startyr=None ) :
+    """
+    Convert a daycent index in year format to datetime index (if
+    given a startyear in datetime range), or period index (default, works with
+    far future or past values).
+
+    Args:
+        df: dataframe from Day/Century with a 'time' and 'dayofyr' column
+        startyr: None, or integer year if placing new index in datetime range. 
+                 Note that datetime range is from 1677 to 2262.
+    Returns:
+        newidx: Datetime or period index
+    """
+    
+    df_c = df.copy()
+    if startyr is not None:
+        offset = df_c.time.iloc[0] - startyr
+        df_c.time = df_c.time - offset
+        df_c.year = df_c.time.astype(int).astype(str)
+        #df_c['month'] = df_c.month.astype(str)
+        #df_c['ts'] = df_c.year + df_c.month
+        newidx = pd.to_datetime(df_c.year, format='%Y') + pd.offsets.YearEnd(0)
+    else:
+        styear = str(int(df_c.time.iloc[0]))
+        endyear = str(int(df_c.time.iloc[-1]))
+        start = pd.to_datetime('1900', format='%Y') + pd.offsets.YearEnd(0)
+        end = pd.to_datetime('1901', format='%Y') + pd.offsets.YearEnd(0)
+        start = dt.date.strftime(start, '%Y-%m-%d').replace('1900', styear)
+        end = dt.date.strftime(end, '%Y-%m-%d').replace('1901', endyear)
+        newidx = pd.period_range(start, end, freq='A')
+    return newidx
