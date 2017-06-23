@@ -246,3 +246,5 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None):
         
     for t in dailytables:
         d[t].index = dayidx
+
+    return d
