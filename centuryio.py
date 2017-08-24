@@ -3,13 +3,15 @@ import pandas as pd
 import datetime as dt
 import pdb
 
-def load_binlist( fpathname ) :
+def load_binlist( fpathname, previous_bin_range=None ) :
     """
     Load a specified list100 output file (*.lis) which is derived from .bin
     DayCent or Century output. Return a pandas DataFrame object.
 
     Args:
         fpathname (str) : path and filename of desired century (.lis) file
+        previous_bin_range: range of index values to remove from previous
+                            binary file (DayCent -e extends previous run)
     Return:
         df   : pandas DataFrame    
     """
@@ -19,6 +21,10 @@ def load_binlist( fpathname ) :
     # Parse fixed width file
     df = pd.read_fwf(fpathname , skiprows=( 1, ), index_col='time',
             header=0, na_values=['NaN', 'NAN', 'INF', '-INF'])
+    if previous_bin_range is not None:
+        test = np.logical_and(df.index >= previous_bin_range[0],
+                df.index <= previous_bin_range[1])
+        df = df.loc[~test, :]
 
     df['year'] = np.floor(df.index)
     df['month'] = np.round((df.index - np.floor(df.index))*12)
@@ -71,7 +77,7 @@ def lisindex_dt( idx, startyr=None ) :
     given a startyear in datetime range), or period index (default, works with
     far future or past values). Note that the convention for list100 output
     is that year.00 is actually december the prior year, so this is adjusted
-    for to make dates compatible with DayCent .out dates (when converted)
+    to make dates compatible with DayCent .out dates (when converted)
 
     Args:
         idx: decimal year index from a Century/DayCent .lis or .out file
@@ -85,10 +91,14 @@ def lisindex_dt( idx, startyr=None ) :
     df['day'] = 1
     df.loc[df.month==0, 'month'] = 12
     df.loc[df.month==12, 'year'] = df.loc[df.month==12, 'year'] - 1
-    if startyr is not None:
+    # Make datetime index if idx is in proper range or startyear given
+    if min(idx)>1677 and max(idx)<2262 :
+        newidx = pd.to_datetime(df) + pd.offsets.MonthEnd(0)
+    elif startyr is not None :
         offset = df.year.iloc[0] - startyr
         df.year = df.year - offset
         newidx = pd.to_datetime(df) + pd.offsets.MonthEnd(0)
+    # Otherwise make a period index
     else:
         ymd = df.iloc[0].loc[['year', 'month', 'day']]
         start = [str(s) for s in ymd.astype(int)]
@@ -115,7 +125,13 @@ def dcindex_ydoy_dt( df, startyr=None ) :
     """
     
     df_c = df.copy()
-    if startyr is not None:
+    # Make datetime index if idx is in proper range or startyear given
+    if min(df.time)>1677 and max(df.time)<2262 :
+        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['doy'] = df_c.dayofyr.astype(str)
+        df_c['ts'] = df_c.year + df_c.doy
+        newidx = pd.to_datetime(df_c.ts.values, format='%Y%j')
+    elif startyr is not None:
         offset = df_c.time.iloc[0] - startyr
         df_c.time = df_c.time - offset
         df_c.year = df_c.time.astype(int).astype(str)
@@ -159,7 +175,13 @@ def dcindex_ymo_dt( df, startyr=None ) :
     """
     
     df_c = df.copy()
-    if startyr is not None:
+    # Make datetime index if idx is in proper range or startyear given
+    if min(df.time)>1677 and max(df.time)<2262 :
+        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['month'] = df_c.month.astype(str)
+        df_c['ts'] = df_c.year + df_c.month
+        newidx = pd.to_datetime(df_c.ts, format='%Y%m') + pd.offsets.MonthEnd(0)
+    elif startyr is not None:
         offset = df_c.time.iloc[0] - startyr
         df_c.time = df_c.time - offset
         df_c.year = df_c.time.astype(int).astype(str)
@@ -195,7 +217,11 @@ def dcindex_y_dt( df, startyr=None ) :
     """
     
     df_c = df.copy()
-    if startyr is not None:
+    # Make datetime index if idx is in proper range or startyear given
+    if min(df.time)>1677 and max(df.time)<2262 :
+        df_c.year = df_c.time.astype(int).astype(str)
+        newidx = pd.to_datetime(df_c.year, format='%Y') + pd.offsets.YearEnd(0)
+    elif startyr is not None:
         offset = df_c.time.iloc[0] - startyr
         df_c.time = df_c.time - offset
         df_c.year = df_c.time.astype(int).astype(str)
@@ -212,9 +238,10 @@ def dcindex_y_dt( df, startyr=None ) :
         newidx = pd.period_range(start, end, freq='A')
     return newidx
 
-def get_daycent_sim(path, siten, simn, branchn, startyear=None):
+def get_daycent_sim(path, siten, simn, branchn, startyear=None,
+        previous_bin_range=None):
     d = {'bin':load_binlist(path + '{0}.out/{1}/{0}_{1}_{2}.lis'.format(
-            siten, simn, branchn)),
+            siten, simn, branchn), previous_bin_range=previous_bin_range),
         'summ':load_dcout(path + '{0}.out/{1}/summary_{1}_{2}.out'.format(
             siten, simn, branchn)),
         'bio':load_dcout(path + '{0}.out/{1}/bio_{1}_{2}.out'.format(
