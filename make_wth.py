@@ -5,17 +5,27 @@ import datetime as dt
 
 def load_prism_daily(fname):
     df = pd.read_csv(fname, skiprows=10, index_col='Date', parse_dates=True)
+    cols = df.columns
+    cols = [c.split(' ')[0] for c in cols]
+    df.columns = cols
+    df.ppt = df.ppt/10 # convert mm to cm
     return df
 
 def make_wth_prism(sitelist, prism_path, wth_path):
-    pvars = ['ppt', 'tmax', 'tmin']
+    """
+    Make sure incoming precip data are in cm
+    """
+    prismfiles = [f for f in os.listdir(prism_path) if '.csv' in f]
+
     for sitename in sitelist:
-        d = {v:load_prism_daily(os.path.join(prism_path, 'PRISM_' + v +
-            '_stable_4km_19810101_20101231_' + sitename + '.csv')) for
-            v in pvars}
-        d['ppt'] = d['ppt']/10 # convert mm to cm
+        matchfile = [f for f in prismfiles if sitename in f]
+        if len(matchfile) > 1:
+            raise ValueError('Multiple {0} files in {1}'.format(sitename,
+                prism_path))
+        else:
+            df = load_prism_daily(os.path.join(prism_path, matchfile[0]))
         # build_wth will put together the file in a correct format
-        wth = build_wth(d)
+        wth = build_wth(df)
         print(wth.head())
         # Use wth file to get monthly site.100 parameters
         site100 = build_site100(wth)
@@ -28,15 +38,15 @@ def make_wth_prism(sitelist, prism_path, wth_path):
                 index=False, header=False)
 
 
-def build_wth(d):
+def build_wth(df):
     wth = pd.DataFrame()
-    wth['day'] = d['ppt'].index.day
-    wth['month'] = d['ppt'].index.month
-    wth['year'] = d['ppt'].index.year
-    wth['doy'] = d['ppt'].index.dayofyear
-    wth['tmax'] = d['tmax'].values
-    wth['tmin'] = d['tmin'].values
-    wth['ppt'] = d['ppt'].values
+    wth['day'] = df.index.day
+    wth['month'] = df.index.month
+    wth['year'] = df.index.year
+    wth['doy'] = df.index.dayofyear
+    wth['tmax'] = df.tmax.values
+    wth['tmin'] = df.tmin.values
+    wth['ppt'] = df.ppt.values
     wth['std1'] = -999
     wth['std2'] = -999
     return wth
