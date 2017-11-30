@@ -127,7 +127,7 @@ def dcindex_ydoy_dt( df, startyr=None ) :
     df_c = df.copy()
     # Make datetime index if idx is in proper range or startyear given
     if min(df.time)>1677 and max(df.time)<2262 :
-        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['year'] = df_c.time.astype(int).astype(str)
         df_c['doy'] = df_c.dayofyr.astype(str)
         df_c['ts'] = df_c.year + df_c.doy
         newidx = pd.to_datetime(df_c.ts.values, format='%Y%j')
@@ -177,7 +177,7 @@ def dcindex_ymo_dt( df, startyr=None ) :
     df_c = df.copy()
     # Make datetime index if idx is in proper range or startyear given
     if min(df.time)>1677 and max(df.time)<2262 :
-        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['year'] = df_c.time.astype(int).astype(str)
         df_c['month'] = df_c.month.astype(str)
         df_c['ts'] = df_c.year + df_c.month
         newidx = pd.to_datetime(df_c.ts, format='%Y%m') + pd.offsets.MonthEnd(0)
@@ -219,7 +219,7 @@ def dcindex_y_dt( df, startyr=None ) :
     df_c = df.copy()
     # Make datetime index if idx is in proper range or startyear given
     if min(df.time)>1677 and max(df.time)<2262 :
-        df_c.year = df_c.time.astype(int).astype(str)
+        df_c['year'] = df_c.time.astype(int).astype(str)
         newidx = pd.to_datetime(df_c.year, format='%Y') + pd.offsets.YearEnd(0)
     elif startyr is not None:
         offset = df_c.time.iloc[0] - startyr
