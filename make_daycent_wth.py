@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import datetime as dt
+import pdb
 
 def load_prism_daily(fname):
     df = pd.read_csv(fname, skiprows=10, index_col='Date', parse_dates=True)
@@ -37,6 +38,35 @@ def make_wth_prism(sitelist, prism_path, wth_path):
         site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
                 index=False, header=False)
 
+def make_wth_dailymet(site, df_d, prism_file, wth_path):
+    """
+    Make sure incoming precip data are in cm
+    """
+    import matplotlib.pyplot as plt
+    df = load_prism_daily(prism_file)
+    # Replace some columns with measured data
+    #df.tmax.plot()
+    repvars = ['Rain_cm_Tot_sum', 'AirTC_Max_max', 'AirTC_Min_min']
+    prismvars = ['ppt', 'tmax', 'tmin']
+    for i, repvar in enumerate(repvars):
+        repidx = ~np.isnan(df_d[repvar])
+        df.loc[repidx.index[repidx],prismvars[i]] = df_d.loc[repidx, repvar]
+    #df.tmax.plot()
+    #plt.legend(['orig', 'rep'])
+    #plt.show()
+
+    # build_wth will put together the file in a correct format
+    wth = build_wth(df)
+    print(wth.head())
+    # Use wth file to get monthly site.100 parameters
+    site100 = build_site100(wth)
+    # Change output format of ppt column and write to file
+    wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
+    wth.to_csv(os.path.join(wth_path, site + '_filled.wth'), sep='\t',
+            index=False, header=False)
+    site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
+    site100.to_csv(os.path.join(wth_path, site + '_filled.100clim'), sep='\t',
+            index=False, header=False)
 
 def build_wth(df):
     wth = pd.DataFrame()
