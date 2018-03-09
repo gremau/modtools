@@ -1,7 +1,10 @@
+"""
+Functions for file loading, transforming, and output of Century/DayCent files
+"""
+
 import numpy as np
 import pandas as pd
 import datetime as dt
-import pdb
 
 def load_binlist( fpathname, previous_bin_range=None ) :
     """
