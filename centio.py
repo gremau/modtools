@@ -5,6 +5,7 @@ Functions for file loading, transforming, and output of Century/DayCent files
 import numpy as np
 import pandas as pd
 import datetime as dt
+import pdb
 
 def load_binlist( fpathname, previous_bin_range=None ) :
     """
@@ -24,10 +25,14 @@ def load_binlist( fpathname, previous_bin_range=None ) :
     # Parse fixed width file
     df = pd.read_fwf(fpathname , skiprows=( 1, ), index_col='time',
             header=0, na_values=['NaN', 'NAN', 'INF', '-INF'])
+    # Remove previous bin range based on index, and index==0.0 (introduced
+    # by reading files with indexes beyond 9999).
     if previous_bin_range is not None:
-        test = np.logical_and(df.index >= previous_bin_range[0],
+        test1 = np.logical_and(df.index >= previous_bin_range[0],
                 df.index <= previous_bin_range[1])
-        df = df.loc[~test, :]
+        # Values over 10000 become zero - remove
+        test2 = df.index==0.0
+        df = df.loc[~np.logical_or(test1, test2), :]
 
     df['year'] = np.floor(df.index)
     df['month'] = np.round((df.index - np.floor(df.index))*12)
@@ -265,7 +270,6 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
             '{0}.out/{1}/year_summary_{1}_{2}.out'.format(siten,simn, branchn)),
         'sip':pd.read_csv(path + '{0}.out/{1}/dc_sip_{1}_{2}.csv'.format(
             siten, simn, branchn))}
-        
     d['bin'].index = lisindex_dt(d['bin'].index, startyr=startyear)
     d['tgmonth'].index = dcindex_ymo_dt(d['tgmonth'], startyr=startyear)
     d['ysumm'].index = dcindex_y_dt(d['ysumm'], startyr=startyear)
