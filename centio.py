@@ -264,6 +264,8 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
             siten, simn, branchn)),
         'swc':load_dcout(path + '{0}.out/{1}/vswc_{1}_{2}.out'.format(
             siten, simn, branchn), noheader=True),
+        'soiltavg':load_dcout(path + '{0}.out/{1}/soiltavg_{1}_{2}.out'.format(
+            siten, simn, branchn), noheader=True),
         'tgmonth':load_dcout(path + '{0}.out/{1}/tgmonth_{1}_{2}.out'.format(
             siten, simn, branchn), tgmonth=True),
         'ysumm':load_dcout(path + 
@@ -276,7 +278,7 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
         
     dayidx = dcindex_ydoy_dt(d['summ'], startyr=startyear)
     dailytables = ['summ', 'bio', 'resp', 'nflux', 'soilc', 'sysc',
-            'swc', 'sip']
+            'swc','soiltavg', 'sip']
         
     for t in dailytables:
         d[t].index = dayidx
