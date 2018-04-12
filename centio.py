@@ -5,6 +5,7 @@ Functions for file loading, transforming, and output of Century/DayCent files
 import numpy as np
 import pandas as pd
 import datetime as dt
+from pathlib import Path
 import pdb
 
 def load_binlist( fpathname, previous_bin_range=None ) :
@@ -52,31 +53,35 @@ def load_dcout( fpathname, skipr=0, noheader=False, tgmonth=False ) :
     Return:
         df   : pandas DataFrame    
     """
+    fpath = Path(fpathname)
+    if fpath.is_file():
+        print('Parsing ' + fpathname)
 
-    print('Parsing ' + fpathname)
-
-    if noheader:
-        with open(fpathname, 'r') as f:
-            cols = f.readline().rstrip('\n')
-        cols = [x for x in cols.split(' ') if x is not '']
-        cols = ['time', 'dayofyr'] + ["c{:02d}".format(x)
-                for x in range(len(cols) - 2)]
-        skipr = skipr - 1
-
-    else:
-        with open(fpathname, 'r') as f:
-            for i in range(skipr+1):
+        if noheader:
+            with open(fpathname, 'r') as f:
                 cols = f.readline().rstrip('\n')
             cols = [x for x in cols.split(' ') if x is not '']
-    
-    if tgmonth:
-        cols.insert(1, 'month')
+            cols = ['time', 'dayofyr'] + ["c{:02d}".format(x)
+                    for x in range(len(cols) - 2)]
+            skipr = skipr - 1
 
-    # Parse fixed width file
-    df = pd.read_fwf(fpathname , skiprows=skipr + 1, header=None, names=cols,
-            na_values=['NaN', 'NAN', 'NA', 'INF', '-INF'])
+        else:
+            with open(fpathname, 'r') as f:
+                for i in range(skipr+1):
+                    cols = f.readline().rstrip('\n')
+                cols = [x for x in cols.split(' ') if x is not '']
+    
+        if tgmonth:
+            cols.insert(1, 'month')
+
+        # Parse fixed width file
+        df = pd.read_fwf(fpathname , skiprows=skipr + 1, header=None,
+                names=cols, na_values=['NaN', 'NAN', 'NA', 'INF', '-INF'])
        
-    return df
+        return df
+    else:
+        print('File' + fpathname + ' does not exist')
+        return pd.DataFrame()
 
 
 def lisindex_dt( idx, startyr=None ) :
@@ -266,6 +271,10 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
             siten, simn, branchn), noheader=True),
         'soiltavg':load_dcout(path + '{0}.out/{1}/soiltavg_{1}_{2}.out'.format(
             siten, simn, branchn), noheader=True),
+        'soiltmax':load_dcout(path + '{0}.out/{1}/soiltmax_{1}_{2}.out'.format(
+            siten, simn, branchn), noheader=True),
+        'soiltmin':load_dcout(path + '{0}.out/{1}/soiltmin_{1}_{2}.out'.format(
+            siten, simn, branchn), noheader=True),
         'tgmonth':load_dcout(path + '{0}.out/{1}/tgmonth_{1}_{2}.out'.format(
             siten, simn, branchn), tgmonth=True),
         'ysumm':load_dcout(path + 
@@ -278,7 +287,7 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
         
     dayidx = dcindex_ydoy_dt(d['summ'], startyr=startyear)
     dailytables = ['summ', 'bio', 'resp', 'nflux', 'soilc', 'sysc',
-            'swc','soiltavg', 'sip']
+            'swc','soiltavg', 'soiltmax', 'soiltmin', 'sip']
         
     for t in dailytables:
         d[t].index = dayidx
