@@ -50,6 +50,8 @@ def load_dcout( fpathname, skipr=0, noheader=False, tgmonth=False ) :
     Args:
         fpathname (str) : path and filename of desired daycent (.out) file
         skipr : number of lines to skip at head of file
+        noheader : Create a new header to replace abnormal or missing one
+        tgmonth : Add a month column if needed
     Return:
         df   : pandas DataFrame    
     """
@@ -58,7 +60,11 @@ def load_dcout( fpathname, skipr=0, noheader=False, tgmonth=False ) :
         print('Parsing ' + fpathname)
 
         if noheader:
+            # Open file, skip lines if asked and get first line of data
+            # Then create a column name array
             with open(fpathname, 'r') as f:
+                for _ in range(skipr):
+                    next(f)
                 cols = f.readline().rstrip('\n')
             cols = [x for x in cols.split(' ') if x is not '']
             cols = ['time', 'dayofyr'] + ["c{:02d}".format(x)
@@ -275,6 +281,8 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
             siten, simn, branchn), noheader=True),
         'soiltmin':load_dcout(path + '{0}.out/{1}/soiltmin_{1}_{2}.out'.format(
             siten, simn, branchn), noheader=True),
+        'soilco2':load_dcout(path + '{0}.out/{1}/co2_{1}_{2}.out'.format(
+            siten, simn, branchn), noheader=True, skipr=1), #replace odd header
         'tgmonth':load_dcout(path + '{0}.out/{1}/tgmonth_{1}_{2}.out'.format(
             siten, simn, branchn), tgmonth=True),
         'ysumm':load_dcout(path + 
@@ -287,7 +295,7 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
         
     dayidx = dcindex_ydoy_dt(d['summ'], startyr=startyear)
     dailytables = ['summ', 'bio', 'resp', 'nflux', 'soilc', 'sysc',
-            'swc','soiltavg', 'soiltmax', 'soiltmin', 'sip']
+            'swc','soiltavg', 'soiltmax', 'soiltmin', 'soilco2', 'sip']
         
     for t in dailytables:
         d[t].index = dayidx
