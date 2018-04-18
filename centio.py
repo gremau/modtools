@@ -298,6 +298,8 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
             'swc','soiltavg', 'soiltmax', 'soiltmin', 'soilco2', 'sip']
         
     for t in dailytables:
-        d[t].index = dayidx
-
+        if d[t].empty:
+            print('centio: "{0}" dataframe is empty'.format(t))
+        else:
+            d[t].index = dayidx
     return d
