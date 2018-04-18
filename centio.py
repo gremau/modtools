@@ -25,7 +25,7 @@ def load_binlist( fpathname, previous_bin_range=None ) :
 
     # Parse fixed width file
     df = pd.read_fwf(fpathname , skiprows=( 1, ), index_col='time',
-            header=0, na_values=['NaN', 'NAN', 'INF', '-INF'])
+            header=0, na_values=['NaN', 'NAN', 'INF', '-INF', '*********'])
     # Remove previous bin range based on index, and index==0.0 (introduced
     # by reading files with indexes beyond 9999).
     if previous_bin_range is not None:
