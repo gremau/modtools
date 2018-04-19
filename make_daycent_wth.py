@@ -38,6 +38,46 @@ def make_wth_prism(sitelist, prism_path, wth_path):
         site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
                 index=False, header=False)
 
+
+def make_wth_loca(sitelist, loca_path, wth_path,
+        modelname=r'HadGEM2-ES', scenario=r'rcp45'):
+    """
+    Create wth and site.100 files for LOCA downscaled data
+    """
+    # Read in loca file
+    locafile = pd.read_csv(loca_path, parse_dates=[0], index_col=0)
+    # Parse out correct GCM model and scenario
+    modeltest = locafile.variable.str.contains(modelname)
+    scenariotest = locafile.variable.str.contains(scenario)
+    select = np.logical_and(modeltest, scenariotest)
+    loca_m_s = locafile.loc[select, :]
+    # Find the precipitation, tmax, and tmin rows
+    ppttest = loca_m_s.variable.str.contains('^pr_')
+    tmaxtest = loca_m_s.variable.str.contains('^tasmax_')
+    tmintest = loca_m_s.variable.str.contains('^tasmin_')
+
+    for sitename in sitelist:
+        # First parse out the sites ppt, tmax, tmin data into a dataframe
+        df = pd.concat([loca_m_s.loc[ppttest, sitename],
+            loca_m_s.loc[tmaxtest, sitename],
+            loca_m_s.loc[tmintest, sitename]],axis=1)
+        df.columns = ['ppt', 'tmax', 'tmin']
+
+        # build_wth will put together the file in a correct format
+        wth = build_wth(df)
+        print(wth.head())
+        # Use wth file to get monthly site.100 parameters
+        site100 = build_site100(wth)
+        # Change output format of ppt column and write to file
+        wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
+        wth['tmax'] = wth['tmax'].map(lambda x:'{0:.3}'.format(x))
+        wth['tmin'] = wth['tmin'].map(lambda x:'{0:.3}'.format(x))
+        wth.to_csv(os.path.join(wth_path, modelname + '_' + scenario + '_' +
+            sitename + '.wth'), sep='\t', index=False, header=False)
+        site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
+        site100.to_csv(os.path.join(wth_path, modelname + '_' + scenario + '_' +
+            sitename + '.100clim'), sep='\t', index=False, header=False)
+
 def make_wth_dailymet(site, df_d, prism_file, wth_path):
     """
     Make sure incoming precip data are in cm
