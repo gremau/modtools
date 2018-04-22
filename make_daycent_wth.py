@@ -62,6 +62,8 @@ def make_wth_loca(sitelist, loca_path, wth_path,
             loca_m_s.loc[tmaxtest, sitename],
             loca_m_s.loc[tmintest, sitename]],axis=1)
         df.columns = ['ppt', 'tmax', 'tmin']
+        # Divide precip by 10 to get cm
+        df.ppt = df.ppt/10
 
         # build_wth will put together the file in a correct format
         wth = build_wth(df)
