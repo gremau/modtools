@@ -40,12 +40,16 @@ def make_wth_prism(sitelist, prism_path, wth_path):
 
 
 def make_wth_loca(sitelist, loca_path, wth_path,
-        modelname=r'HadGEM2-ES', scenario=r'rcp45'):
+        modelname=r'HadGEM2-ES', scenario=r'rcp45',
+        rmbefore='2017-01-01 12:00'):
     """
     Create wth and site.100 files for LOCA downscaled data
     """
     # Read in loca file
     locafile = pd.read_csv(loca_path, parse_dates=[0], index_col=0)
+    # Remove some rows
+    rmtest = locafile.index < rmbefore
+    locafile = locafile.iloc[~rmtest,:]
     # Parse out correct GCM model and scenario
     modeltest = locafile.variable.str.contains(modelname)
     scenariotest = locafile.variable.str.contains(scenario)
