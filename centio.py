@@ -258,37 +258,44 @@ def dcindex_y_dt( df, startyr=None ) :
     return newidx
 
 def get_daycent_sim(path, siten, simn, branchn, startyear=None,
-        previous_bin_range=None):
-    d = {'bin':load_binlist(path + '{0}.out/{1}/{0}_{1}_{2}.lis'.format(
-            siten, simn, branchn), previous_bin_range=previous_bin_range),
-        'summ':load_dcout(path + '{0}.out/{1}/summary_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'bio':load_dcout(path + '{0}.out/{1}/bio_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'resp':load_dcout(path + '{0}.out/{1}/resp_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'nflux':load_dcout(path + '{0}.out/{1}/nflux_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'soilc':load_dcout(path + '{0}.out/{1}/soilc_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'sysc':load_dcout(path + '{0}.out/{1}/sysc_{1}_{2}.out'.format(
-            siten, simn, branchn)),
-        'swc':load_dcout(path + '{0}.out/{1}/vswc_{1}_{2}.out'.format(
-            siten, simn, branchn), noheader=True),
-        'soiltavg':load_dcout(path + '{0}.out/{1}/soiltavg_{1}_{2}.out'.format(
-            siten, simn, branchn), noheader=True),
-        'soiltmax':load_dcout(path + '{0}.out/{1}/soiltmax_{1}_{2}.out'.format(
-            siten, simn, branchn), noheader=True),
-        'soiltmin':load_dcout(path + '{0}.out/{1}/soiltmin_{1}_{2}.out'.format(
-            siten, simn, branchn), noheader=True),
-        'soilco2':load_dcout(path + '{0}.out/{1}/co2_{1}_{2}.out'.format(
-            siten, simn, branchn), noheader=True, skipr=1), #replace odd header
-        'tgmonth':load_dcout(path + '{0}.out/{1}/tgmonth_{1}_{2}.out'.format(
-            siten, simn, branchn), tgmonth=True),
+        scenario=None, previous_bin_range=None):
+    if scenario is not None:
+        simpath = simn + '/' + scenario
+    else:
+        simpath = simn
+    d = {'bin':load_binlist(path + '{0}.out/{1}/{0}_{2}_{3}.lis'.format(
+            siten,simpath,simn,branchn), previous_bin_range=previous_bin_range),
+        'summ':load_dcout(path + '{0}.out/{1}/summary_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'bio':load_dcout(path + '{0}.out/{1}/bio_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'resp':load_dcout(path + '{0}.out/{1}/resp_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'nflux':load_dcout(path + '{0}.out/{1}/nflux_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'soilc':load_dcout(path + '{0}.out/{1}/soilc_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'sysc':load_dcout(path + '{0}.out/{1}/sysc_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn)),
+        'swc':load_dcout(path + '{0}.out/{1}/vswc_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), noheader=True),
+        'soiltavg':load_dcout(path + '{0}.out/{1}/soiltavg_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), noheader=True),
+        'soiltmax':load_dcout(path + '{0}.out/{1}/soiltmax_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), noheader=True),
+        'soiltmin':load_dcout(path + '{0}.out/{1}/soiltmin_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), noheader=True),
+        #replace odd header
+        'soilco2':load_dcout(path + '{0}.out/{1}/co2_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), noheader=True, skipr=1),
+        'tgmonth':load_dcout(path + '{0}.out/{1}/tgmonth_{2}_{3}.out'.format(
+            siten, simpath, simn, branchn), tgmonth=True),
         'ysumm':load_dcout(path + 
-            '{0}.out/{1}/year_summary_{1}_{2}.out'.format(siten,simn, branchn)),
-        'sip':pd.read_csv(path + '{0}.out/{1}/dc_sip_{1}_{2}.csv'.format(
-            siten, simn, branchn))}
+            '{0}.out/{1}/year_summary_{2}_{3}.out'.format(
+                siten,simpath,simn, branchn)),
+        'sip':pd.read_csv(path + '{0}.out/{1}/dc_sip_{2}_{3}.csv'.format(
+            siten, simpath, simn, branchn))}
+    
     d['bin'].index = lisindex_dt(d['bin'].index, startyr=startyear)
     d['tgmonth'].index = dcindex_ymo_dt(d['tgmonth'], startyr=startyear)
     d['ysumm'].index = dcindex_y_dt(d['ysumm'], startyr=startyear)
