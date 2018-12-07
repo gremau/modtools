@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 from pathlib import Path
-import pdb
+from IPython.core.debugger import set_trace
 
 def load_binlist( fpathname, previous_bin_range=None ) :
     """
@@ -295,7 +295,6 @@ def get_daycent_sim(path, siten, simn, branchn, startyear=None,
                 siten,simpath,simn, branchn)),
         'sip':pd.read_csv(path + '{0}.out/{1}/dc_sip_{2}_{3}.csv'.format(
             siten, simpath, simn, branchn))}
-    
     d['bin'].index = lisindex_dt(d['bin'].index, startyr=startyear)
     d['tgmonth'].index = dcindex_ymo_dt(d['tgmonth'], startyr=startyear)
     d['ysumm'].index = dcindex_y_dt(d['ysumm'], startyr=startyear)

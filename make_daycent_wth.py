@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import datetime as dt
-import pdb
+from IPython.core.debugger import set_trace
 
 def load_prism_daily(fname):
     df = pd.read_csv(fname, skiprows=10, index_col='Date', parse_dates=True)
@@ -38,6 +38,27 @@ def make_wth_prism(sitelist, prism_path, wth_path):
         site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
                 index=False, header=False)
 
+def make_wth_ushcn(sitelist, ushcn_pathname, out_pathnames):
+    """
+    Create wth and site.100 files for USHCN data
+    Make sure incoming precip data are in cm
+    """
+    # Read in USHCN file
+    df = pd.read_csv(ushcn_pathname)
+    set_trace()
+    for sitename in sitelist:
+        # build_wth will put together the file in a correct format
+        wth = build_wth(df)
+        print(wth.head())
+        # Use wth file to get monthly site.100 parameters
+        site100 = build_site100(wth)
+        # Change output format of ppt column and write to file
+        wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
+        wth.to_csv(os.path.join(wth_path, sitename + '.wth'), sep='\t',
+                index=False, header=False)
+        site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
+        site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
+                index=False, header=False)
 
 def make_wth_loca(sitelist, loca_path, wth_path,
         modelname=r'HadGEM2-ES', scenario=r'rcp45',
@@ -86,7 +107,8 @@ def make_wth_loca(sitelist, loca_path, wth_path,
 
 def make_wth_dailymet(site, df_d, prism_file, wth_path):
     """
-    Make sure incoming precip data are in cm
+    Take daily prism data for a site and replace with local daily met data
+    where available. Make sure incoming precip data are in cm
     """
     import matplotlib.pyplot as plt
     df = load_prism_daily(prism_file)
