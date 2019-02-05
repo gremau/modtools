@@ -62,7 +62,7 @@ def make_wth_ushcn(sitelist, ushcn_pathname, out_pathnames):
 
 def make_wth_loca(sitelist, loca_path, wth_path,
         modelname=r'HadGEM2-ES', scenario=r'rcp45',
-        rmbefore='2017-01-01 12:00'):
+        rmbefore='2018-01-01 12:00'):
     """
     Create wth and site.100 files for LOCA downscaled data
     """
