@@ -38,6 +38,48 @@ def make_wth_prism(sitelist, prism_path, wth_path):
         site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
                 index=False, header=False)
 
+def fill_site100(sitelist, site100_path, clim100_path, modelscenario=None):
+    """
+    Copy the data from the 100clim file into the site.100 file
+    """
+    if modelscenario is not None:
+        site100_files = [f for f in os.listdir(site100_path) if '.100' in f
+                and modelscenario in f]
+        clim100_files = [f for f in os.listdir(clim100_path) if '.100clim' in f
+                and modelscenario in f]
+    else:
+        site100_files = [f for f in os.listdir(site100_path) if '.100' in f]
+        clim100_files = [f for f in os.listdir(clim100_path) if '.100clim' in f]
+    # check if target directory exists... if not, create it.
+    outdir = os.path.join(site100_path, 'new')
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    for sitename in sitelist:
+        sitefile = [f for f in site100_files if sitename in f]
+        climfile = [f for f in clim100_files if sitename in f]
+        if len(sitefile) > 1:
+            raise ValueError('Multiple {0} files in {1}'.format(sitename,
+                site100_path))
+        if len(climfile) > 1:
+            raise ValueError('Multiple {0} files in {1}'.format(sitename,
+                clim100_path))
+
+        # Create a new file to write to
+        outfile =  os.path.join(outdir, sitefile[0])
+        # Open the files and read in lines (base new site.100 on old one)
+        with open(os.path.join(clim100_path, climfile[0]), 'r') as fw:
+            with open(os.path.join(site100_path, sitefile[0]), 'r') as fs:
+                with open(outfile, 'w') as fout:
+                    outlines = fs.readlines()
+                    climlines = fw.readlines()
+                    # Copy over precipitation
+                    outlines[2:26] = climlines[0:24]
+                    # Copy over temperature
+                    outlines[38:62] = climlines[36:60]
+                    # Write outfile
+                    fout.writelines(outlines)
+
 def make_wth_ushcn(sitelist, ushcn_pathname, out_pathnames):
     """
     Create wth and site.100 files for USHCN data
@@ -105,7 +147,7 @@ def make_wth_loca(sitelist, loca_path, wth_path,
         site100.to_csv(os.path.join(wth_path, modelname + '_' + scenario + '_' +
             sitename + '.100clim'), sep='\t', index=False, header=False)
 
-def make_wth_dailymet(site, df_d, prism_file, wth_path):
+def make_wth_dailymet(site, df_d, prism_file, wth_path, fmodifier=None):
     """
     Take daily prism data for a site and replace with local daily met data
     where available. Make sure incoming precip data are in cm
@@ -119,9 +161,6 @@ def make_wth_dailymet(site, df_d, prism_file, wth_path):
     for i, repvar in enumerate(repvars):
         repidx = ~np.isnan(df_d[repvar])
         df.loc[repidx.index[repidx],prismvars[i]] = df_d.loc[repidx, repvar]
-    #df.tmax.plot()
-    #plt.legend(['orig', 'rep'])
-    #plt.show()
 
     # build_wth will put together the file in a correct format
     wth = build_wth(df)
@@ -130,10 +169,16 @@ def make_wth_dailymet(site, df_d, prism_file, wth_path):
     site100 = build_site100(wth)
     # Change output format of ppt column and write to file
     wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
-    wth.to_csv(os.path.join(wth_path, site + '_filled.wth'), sep='\t',
+    if fmodifier is not None:
+        outfilename1 = site + '_' + fmodifier + '.wth'
+        outfilename2 = site + '_' + fmodifier + '.100clim'
+    else:
+        outfilename1 = site + '.wth'
+        outfilename2 = site + '.100clim'
+    wth.to_csv(os.path.join(wth_path, outfilename1), sep='\t',
             index=False, header=False)
     site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
-    site100.to_csv(os.path.join(wth_path, site + '_filled.100clim'), sep='\t',
+    site100.to_csv(os.path.join(wth_path, outfilename2), sep='\t',
             index=False, header=False)
 
 def build_wth(df):
