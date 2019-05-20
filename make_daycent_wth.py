@@ -80,14 +80,17 @@ def fill_site100(sitelist, site100_path, clim100_path, modelscenario=None):
                     # Write outfile
                     fout.writelines(outlines)
 
-def make_wth_ushcn(sitelist, ushcn_pathname, out_pathnames):
+def make_wth_ushcn(sitelist, ushcn_pathname, out_pathname):
     """
     Create wth and site.100 files for USHCN data
     Make sure incoming precip data are in cm
     """
-    # Read in USHCN file
-    df = pd.read_csv(ushcn_pathname)
-    set_trace()
+    # Read in USHCN file, creating datetime index from columns
+    df = pd.read_csv(ushcn_pathname, parse_dates={'Date':[2,1,0]})
+    df.set_index(df.Date, inplace=True)
+    # Rename and recalculate columns
+    df = df.rename(columns={"min.temp": "tmin", "max.temp": "tmax",
+        "precip":"ppt"})
     for sitename in sitelist:
         # build_wth will put together the file in a correct format
         wth = build_wth(df)
@@ -96,11 +99,11 @@ def make_wth_ushcn(sitelist, ushcn_pathname, out_pathnames):
         site100 = build_site100(wth)
         # Change output format of ppt column and write to file
         wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
-        wth.to_csv(os.path.join(wth_path, sitename + '.wth'), sep='\t',
+        wth.to_csv(os.path.join(out_pathname, sitename + '.wth'), sep='\t',
                 index=False, header=False)
         site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
-        site100.to_csv(os.path.join(wth_path, sitename + '.100clim'), sep='\t',
-                index=False, header=False)
+        site100.to_csv(os.path.join(out_pathname, sitename + '.100clim'),
+                sep='\t',index=False, header=False)
 
 def make_wth_loca(sitelist, loca_path, wth_path,
         modelname=r'HadGEM2-ES', scenario=r'rcp45',
