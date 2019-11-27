@@ -105,6 +105,32 @@ def make_wth_ushcn(sitelist, ushcn_pathname, out_pathname):
         site100.to_csv(os.path.join(out_pathname, sitename + '.100clim'),
                 sep='\t',index=False, header=False)
 
+def make_wth_ghcnd(sitelist, ghcnd_pathname, out_pathname):
+    """
+    Create wth and site.100 files for GHCND data
+    Make sure incoming precip data are in cm
+    """
+    # Read in GHCND file, creating datetime index from columns
+    df = pd.read_csv(ghcnd_pathname, parse_dates=['DATE'])
+    df.set_index(df.DATE, inplace=True)
+    # Rename and recalculate columns
+    df = df.rename(columns={"TMIN": "tmin", "TMAX": "tmax",
+        "PRCP":"ppt"})
+    for sitename in sitelist:
+        # build_wth will put together the file in a correct format
+        wth = build_wth(df)
+        print(wth.head())
+        # Use wth file to get monthly site.100 parameters
+        site100 = build_site100(wth)
+        # Change output format of ppt column and write to file
+        wth['ppt'] = wth['ppt'].map(lambda x:'{0:.3}'.format(x))
+        wth.to_csv(os.path.join(out_pathname, sitename + '.wth'), sep='\t',
+                index=False, header=False, float_format='%g')
+        site100['var'] = site100['var'].map(lambda x:'{0:.3}'.format(x))
+        site100.to_csv(os.path.join(out_pathname, sitename + '.100clim'),
+                sep='\t',index=False, header=False)
+
+
 def make_wth_loca(sitelist, loca_path, wth_path,
         modelname=r'HadGEM2-ES', scenario=r'rcp45',
         rmbefore='2018-01-01 12:00'):
